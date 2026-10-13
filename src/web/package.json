@@ -15,6 +15,8 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "0.10.13",
     "@tanstack/react-router": "1.170.44",
@@ -22,9 +24,13 @@
     "@tanstack/react-start": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cn": "^0.4.0",
     "lucide-react": "^0.577.0",
+    "motion": "^14.1.1",
+    "radix-ui": "^1.8.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "recharts": "3.8.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.3.6"
