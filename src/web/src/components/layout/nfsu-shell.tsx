@@ -23,23 +23,22 @@ interface NavItem {
 	roles: string[];
 }
 
-// All navigation items for the NFSU Placement Portal
+// Strictly enforced role-to-navigation mapping per backend security matrix:
+// - /audit: ADMIN ONLY (Backend /api/audit requires Role.ADMIN)
+// - /policy: ADMIN and OFFICER (Staff write roles)
+// - /students: ADMIN, OFFICER, COORDINATOR
+// - /recruitment, /attendance, /offers: ADMIN, OFFICER (Recruiter restricted to candidate scopes)
+// - /reports: ADMIN, OFFICER, COORDINATOR
 const navItems: NavItem[] = [
 	{
 		title: "Dashboard",
 		href: "/",
 		icon: HomeIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
-			"coordinator",
 			"course_coordinator",
 			"recruiter",
-			"company",
 		],
 	},
 	{
@@ -47,13 +46,8 @@ const navItems: NavItem[] = [
 		href: "/students",
 		icon: AcademicCapIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
-			"coordinator",
 			"course_coordinator",
 		],
 	},
@@ -62,14 +56,8 @@ const navItems: NavItem[] = [
 		href: "/recruitment",
 		icon: BriefcaseIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
-			"recruiter",
-			"company",
 		],
 	},
 	{
@@ -77,14 +65,8 @@ const navItems: NavItem[] = [
 		href: "/attendance",
 		icon: ClipboardDocumentCheckIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
-			"recruiter",
-			"company",
 		],
 	},
 	{
@@ -92,14 +74,8 @@ const navItems: NavItem[] = [
 		href: "/offers",
 		icon: DocumentCheckIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
-			"recruiter",
-			"company",
 		],
 	},
 	{
@@ -107,11 +83,7 @@ const navItems: NavItem[] = [
 		href: "/policy",
 		icon: ScaleIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
 		],
 	},
@@ -120,13 +92,8 @@ const navItems: NavItem[] = [
 		href: "/reports",
 		icon: ChartBarSquareIcon,
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
 			"placement_officer",
-			"coordinator",
 			"course_coordinator",
 		],
 	},
@@ -134,13 +101,9 @@ const navItems: NavItem[] = [
 		title: "Audit Trail",
 		href: "/audit",
 		icon: ShieldCheckIcon,
+		// Strictly Placement Administrator only per backend require_roles(Role.ADMIN)
 		roles: [
-			"admin",
-			"administrator",
-			"placement_admin",
 			"placement_administrator",
-			"officer",
-			"placement_officer",
 		],
 	},
 ];
@@ -170,18 +133,35 @@ export function NfsuShell({ children }: { children: React.ReactNode }) {
 		return null; // Redirecting to login
 	}
 
-	// Filter navigation items matching either normalized role, raw backend role, or allow-all for admin
+	// Strictly filter navigation: items that a role cannot access are completely hidden
 	const filteredNav = navItems.filter((item) => {
-		// Administrator sees 100% of the elements
-		if (role === "placement_administrator") return true;
-
-		const currentRaw = rawRole.toLowerCase();
-		return (
-			item.roles.includes(role) ||
-			item.roles.includes(currentRaw) ||
-			item.roles.some((r) => currentRaw.includes(r))
-		);
+		if (role === "placement_administrator") {
+			return true;
+		}
+		// For all other roles, check strict role membership (Audit Trail will never appear for Officer, Coordinator, Recruiter)
+		return item.roles.includes(role);
 	});
+
+	// URL route guard: If a non-admin manually navigates to /audit, forbid and redirect to /
+	if (currentPath === "/audit" && role !== "placement_administrator") {
+		return (
+			<div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-4 font-mono text-xs">
+				<div className="p-6 bg-slate-950 border border-red-900 rounded-xl text-center max-w-md space-y-3">
+					<div className="text-red-400 font-bold text-sm">403 Forbidden</div>
+					<p className="text-slate-400">
+						Audit trail and cryptographic chain records are restricted strictly to Placement Administrators.
+					</p>
+					<Button
+						size="sm"
+						onClick={() => navigate({ to: "/" })}
+						className="bg-slate-800 text-white hover:bg-slate-700 text-xs cursor-pointer"
+					>
+						Return to Dashboard
+					</Button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
@@ -215,12 +195,9 @@ export function NfsuShell({ children }: { children: React.ReactNode }) {
 						</div>
 						<Badge
 							variant="outline"
-							className="bg-indigo-950/80 border-indigo-500/40 text-indigo-300 text-xs px-2.5 py-0.5"
+							className="bg-indigo-950/80 border-indigo-500/40 text-indigo-300 text-xs px-2.5 py-0.5 capitalize"
 						>
-							{role === "placement_administrator" && "Placement Administrator"}
-							{role === "placement_officer" && "Placement Officer"}
-							{role === "course_coordinator" && "Course Coordinator"}
-							{role === "recruiter" && "Recruiter Scope"}
+							{role.replace("_", " ")}
 						</Badge>
 						<Button
 							variant="ghost"
